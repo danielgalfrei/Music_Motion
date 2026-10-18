@@ -1,0 +1,13 @@
+[
+  {
+    "_comentario": "Entradas manuales para fuentes sin RSS (Instagram de @industriamusicalcom, @mas34, TikTok, YouTube...). Copia este formato; borra esta entrada de ejemplo. 'region' es 'es' o 'int'.",
+    "title": "EJEMPLO: Un sello independiente adquiere el catálogo de un artista",
+    "summary": "Resumen en una o dos frases escrito por ti.",
+    "region": "es",
+    "date": "2026-10-18T09:00:00Z",
+    "source": "Instagram @industriamusicalcom",
+    "sourceType": "Instagram",
+    "url": "https://www.instagram.com/industriamusicalcom/",
+    "disabled": true
+  }
+]
