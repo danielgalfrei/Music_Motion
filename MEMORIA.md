@@ -1,7 +1,7 @@
 # Memoria del proyecto: Music Motion
 
 **Última actualización:** 18 de octubre de 2026
-**Estado:** prototipo funcional (v0.3), ejecutable en local
+**Estado:** prototipo funcional (v0.4), en local y online en Github Pages
 
 ---
 
@@ -112,7 +112,12 @@ Alternativas futuras: servicio de pago que convierta Instagram en RSS, API ofici
 3. Elegir sección y región, filtrar, buscar con la lupa.
 4. Para cerrar, cerrar la ventana negra.
 
+**Versión online (Github Pages):** https://danielgalfrei.github.io/Music_Motion/ — accesible en cualquier momento, sin tener el ordenador encendido. Una tarea automática de Github (`.github/workflows/pages.yml`) ejecuta `build-static.js` cada 30 minutos: descarga noticias y listas, las guarda en `api/news.json` y `api/charts.json` y publica la web. Al cambiar `data/manual.json` y subirlo a `main`, se republica solo. Si una publicación falla, la web sigue mostrando la última buena (pestaña Actions del repositorio).
+
 ## 8. Historial de cambios
+
+**v0.4 (18/10/2026)**
+- Publicación en Github Pages con actualización automática cada 30 minutos. La página carga `api/news.json` y `api/charts.json` y filtra/busca en el navegador (también en local). `server.js` exporta `build()` para `build-static.js`. En la versión online el botón Actualizar solo recarga los datos.
 
 **v0.3 (18/10/2026)**
 - Portadas y botón de reproducir en Top streaming y Top artistas, con reproductor fijo inferior.
@@ -156,7 +161,7 @@ Alternativas futuras: servicio de pago que convierta Instagram en RSS, API ofici
 **Medio plazo**
 - Base de datos con histórico.
 - Resumen diario ("briefing") por email o WhatsApp y alertas por sello, artista o tema.
-- Publicación online con acceso por usuario.
+- Acceso por usuario a la versión online (ahora es pública, sin contraseña).
 
 **Largo plazo**
 - Agrupar la misma noticia de varias fuentes.

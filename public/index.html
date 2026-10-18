@@ -153,7 +153,8 @@ seg('regions','region','r'); seg('kinds','kind','k');
 $('sections').onclick = e => { const b = e.target.closest('.tab'); if(!b) return;
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on', x===b)); st.section=b.dataset.s; render(); };
 $('ref').onclick = async () => { $('ref').disabled = true; $('upd').textContent='Actualizando…';
-  await fetch('/api/refresh',{method:'POST'}); charts = null; $('ref').disabled=false; render(); };
+  try { await fetch('api/refresh',{method:'POST'}); } catch {}   // solo existe al ejecutar en local; en Github Pages basta con recargar los datos
+  news = charts = null; $('ref').disabled=false; render(); };
 
 // ---- Render ----
 async function render() {
@@ -163,12 +164,19 @@ async function render() {
   return renderCharts();
 }
 
+let news = null;
 async function renderNews() {
   const q = $('q').value.trim();
-  const p = new URLSearchParams();
-  if (q) p.set('q', q); else p.set('region', st.region);   // buscando: se busca en España e Internacional
-  if (st.category) p.set('category', st.category);
-  const r = await (await fetch('/api/news?'+p)).json();
+  if (!news) {
+    try { news = await (await fetch('api/news.json', { cache: 'no-cache' })).json(); }
+    catch { $('list').innerHTML = '<div class="empty">No se han podido cargar las noticias. Inténtalo de nuevo en unos segundos.</div>'; return; }
+  }
+  // buscando: se busca en España e Internacional
+  const n = q.toLowerCase();
+  const found = news.items.filter(i =>
+    (q ? `${i.title} ${i.originalTitle || ''} ${i.summary} ${i.source}`.toLowerCase().includes(n) : i.region === st.region) &&
+    (!st.category || i.category === st.category));
+  const r = { updatedAt: news.updatedAt, total: found.length, items: found.slice(0, 200) };
   $('upd').textContent = r.updatedAt ? 'Actualizado ' + fmt(r.updatedAt) : 'Cargando fuentes…';
   const hint = q ? `<p class="hint">${r.total} resultado(s) para «${esc(q)}» en España e Internacional.</p>` : '';
   $('list').innerHTML = hint + (r.items.length ? r.items.map(i => `
@@ -188,7 +196,7 @@ const move = m => m === '=' || !m ? '' : m === 'NEW' ? '<span class="up">nuevo</
 async function renderCharts() {
   if (!charts) {
     $('list').innerHTML = '<div class="empty">Cargando listas…</div>';
-    try { const res = await fetch('/api/charts'); if (!res.ok) throw 0; charts = await res.json(); }
+    try { const res = await fetch('api/charts.json', { cache: 'no-cache' }); if (!res.ok) throw 0; charts = await res.json(); }
     catch { $('list').innerHTML = '<div class="empty">No se han podido cargar las listas. Inténtalo de nuevo en unos segundos.</div>'; return; }
   }
   $('upd').textContent = 'Listas ' + fmt(charts.updatedAt);
@@ -248,7 +256,7 @@ $('pclose').onclick = () => {
 const _renderCharts = renderCharts;
 renderCharts = async function () { await _renderCharts(); markNow(); };
 
-render(); setInterval(() => { if (st.section === 'news' && !$('q').value) renderNews(); }, 5*60*1000);
+render(); setInterval(() => { if (st.section === 'news' && !$('q').value) { news = null; renderNews(); } }, 5*60*1000);
 </script>
 </body>
 </html>

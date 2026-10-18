@@ -38,6 +38,8 @@ const clean = (s = '') =>
 
 let cache = { items: [], updatedAt: null, status: [] };
 let chartsCache = null;
+let translating = Promise.resolve();
+let covering = Promise.resolve();
 
 async function fetchSource(src) {
   const feed = await parser.parseURL(src.url);
@@ -115,7 +117,7 @@ async function refresh() {
   console.log(`[${cache.updatedAt}] ${items.length} artículos · ${status.filter(s => s.ok).length}/${status.length} fuentes OK`);
 
   // Internacional: traducir al español en segundo plano (la web ya puede mostrar el original mientras tanto)
-  translateItems(items.filter(i => i.region === 'int'))
+  translating = translateItems(items.filter(i => i.region === 'int'))
     .then(() => console.log('Traducciones completadas'))
     .catch(e => console.warn('translate:', e.message));
 }
@@ -123,7 +125,7 @@ async function refresh() {
 async function refreshCharts() {
   try {
     chartsCache = await buildCharts();
-    fillCovers(chartsCache).then(() => console.log('Portadas actualizadas')).catch(e => console.warn('covers:', e.message));
+    covering = fillCovers(chartsCache).then(() => console.log('Portadas actualizadas')).catch(e => console.warn('covers:', e.message));
     console.log(`[${chartsCache.updatedAt}] listas de streaming actualizadas`);
   } catch (e) {
     console.warn('charts:', e.message);
@@ -146,6 +148,13 @@ app.get('/api/news', (req, res) => {
   res.json({ updatedAt: cache.updatedAt, total: items.length, items: items.slice(0, 200) });
 });
 
+// Datos completos para la web (la misma página funciona en local y en Github Pages: filtra en el navegador)
+app.get('/api/news.json', (req, res) => res.json({ updatedAt: cache.updatedAt, items: cache.items }));
+app.get('/api/charts.json', async (req, res) => {
+  if (!chartsCache) await refreshCharts();
+  chartsCache ? res.json(chartsCache) : res.status(503).json({ error: 'Listas no disponibles todavía' });
+});
+
 app.get('/api/charts', async (req, res) => {
   if (!chartsCache) await refreshCharts();
   chartsCache ? res.json(chartsCache) : res.status(503).json({ error: 'Listas no disponibles todavía' });
@@ -158,10 +167,21 @@ app.post('/api/refresh', async (req, res) => {
   res.json({ ok: true, updatedAt: cache.updatedAt });
 });
 
-app.listen(PORT, () => {
-  console.log(`Music Motion en http://localhost:${PORT}`);
-  refresh();
-  refreshCharts();
-  setInterval(refresh, REFRESH_MS);
-  setInterval(refreshCharts, CHARTS_REFRESH_MS);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Music Motion en http://localhost:${PORT}`);
+    refresh();
+    refreshCharts();
+    setInterval(refresh, REFRESH_MS);
+    setInterval(refreshCharts, CHARTS_REFRESH_MS);
+  });
+}
+
+// Para build-static.js (versión estática de Github Pages)
+module.exports = {
+  async build() {
+    await Promise.all([refresh(), refreshCharts()]);
+    await Promise.all([translating, covering]);
+    return { news: { updatedAt: cache.updatedAt, items: cache.items, status: cache.status }, charts: chartsCache };
+  }
+};
